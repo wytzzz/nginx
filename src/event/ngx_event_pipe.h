@@ -21,7 +21,18 @@ typedef ngx_int_t (*ngx_event_pipe_input_filter_pt)(ngx_event_pipe_t *p,
 typedef ngx_int_t (*ngx_event_pipe_output_filter_pt)(void *data,
                                                      ngx_chain_t *chain);
 
-
+/*
+这是 Nginx 中 ngx_event_pipe_s 结构体,它记录一个管道事件(代理或临时文件)的状态:
+上下游连接
+缓冲区链表
+输入/输出过滤函数
+读写标志和错误状态
+缓冲池和日志
+文件信息如大小和位置
+超时时间
+限速信息
+临时文件对象
+*/
 struct ngx_event_pipe_s {
     ngx_connection_t  *upstream;
     ngx_connection_t  *downstream;

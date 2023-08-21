@@ -36,8 +36,25 @@ struct ngx_shm_zone_s {
 };
 
 
+/*
+nginx 中的 ngx_cycle_t 结构体主要记录 nginx 服务器运行时的一些数据结构和状态:
+conf_ctx: 配置上下文
+pool: 内存池
+log: 日志对象
+modules: 模块列表
+listening: 监听 socket 列表
+paths: 路径列表
+config_dump: 配置转储
+open_files: 打开文件列表
+shared_memory: 共享内存列表
+connections: 连接数组
+read/write_events: 事件数组
+files: 文件连接数组
+free_connections: 空闲连接
+reusable_connections: 可重用连接
+*/
 struct ngx_cycle_s {
-    void                  ****conf_ctx;
+    void                  ****conf_ctx; //所有module的conf_ctx
     ngx_pool_t               *pool;
 
     ngx_log_t                *log;
@@ -56,8 +73,11 @@ struct ngx_cycle_s {
     ngx_queue_t               reusable_connections_queue;
     ngx_uint_t                reusable_connections_n;
     time_t                    connections_reuse_time;
-
-    ngx_array_t               listening;
+    
+    //每一个Nginx服务器可能需要监听多个端口（例如HTTP通常监听80端口，HTTPS监听443端口），
+    //或者在多个IP地址上监听同一个端口，这就需要多个监听套接字。
+    //ngx_array_t listening数组就是用来存放这些监听套接字信息的地方
+    ngx_array_t               listening; 
     ngx_array_t               paths;
 
     ngx_array_t               config_dump;
@@ -85,7 +105,30 @@ struct ngx_cycle_s {
     ngx_str_t                 hostname;
 };
 
+/*
+ngx_core_conf_t是nginx核心模块的主配置结构体,包括:
+daemon:是否以守护进程运行
+master:是否为master进程
+timer_resolution:时间分辨率
+shutdown_timeout:关闭超时时间
+worker_processes:工作进程数
+debug_points:调试点数组
+rlimit_nofile:最大文件打开数
+rlimit_core:最大核心文件大小
+priority:niceness
+cpu_affinity:CPU亲和策略
+username:运行用户名
+group:运行用户组
+working_directory:工作目录
+lock_file:锁文件
+pid:进程ID文件
+oldpid:旧进程ID文件
+env:环境变量
+transparent:socket透明代理
 
+这些配置会设置进程数,资源限制,日志路径等整个服务器的运行环境。是nginx所有模块配置的基础。
+
+*/
 typedef struct {
     ngx_flag_t                daemon;
     ngx_flag_t                master;

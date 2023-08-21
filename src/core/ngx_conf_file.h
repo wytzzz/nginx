@@ -19,6 +19,23 @@
  *    TT        command type, i.e. HTTP "location" or "server" command
  */
 
+
+/*
+NGX_CONF_NOARGS：指令不带参数。
+NGX_CONF_TAKE1到NGX_CONF_TAKE7：指令带有对应数量的参数。
+NGX_CONF_MAX_ARGS：指令参数的最大数量。
+NGX_CONF_TAKE12、NGX_CONF_TAKE13、NGX_CONF_TAKE23：指令带有特定组合数量的参数。
+NGX_CONF_TAKE123、NGX_CONF_TAKE1234：指令带有一组连续数量的参数。
+NGX_CONF_ARGS_NUMBER：表示指令参数个数的掩码。
+NGX_CONF_BLOCK：指令是一个块类型的指令（需要以"{"开始）。
+NGX_CONF_FLAG：指令是一个布尔类型的指令。
+NGX_CONF_ANY：指令可以接受任意数量的参数。
+NGX_CONF_1MORE：指令至少需要一个参数。
+NGX_CONF_2MORE：指令至少需要两个参数。
+NGX_DIRECT_CONF：指令的配置上下文是直接指针。
+NGX_MAIN_CONF：指令的配置上下文是指针的指针。
+NGX_ANY_CONF：表示任意类型的配置上下文
+*/
 #define NGX_CONF_NOARGS      0x00000001
 #define NGX_CONF_TAKE1       0x00000002
 #define NGX_CONF_TAKE2       0x00000004
@@ -74,6 +91,13 @@
 #define NGX_MAX_CONF_ERRSTR  1024
 
 
+/*
+name：一个ngx_str_t类型的字段，表示指令的名称。
+type：一个ngx_uint_t类型的字段，表示指令的类型。
+set：一个函数指针，指向一个函数，用于解析和处理指令。
+conf：一个ngx_uint_t类型的字段，表示指令的配置级别。
+offset：一个ngx_uint_t类型的字段，表示指令在配置结构体中的偏移量。
+*/
 struct ngx_command_s {
     ngx_str_t             name;
     ngx_uint_t            type;
@@ -123,7 +147,7 @@ struct ngx_conf_s {
     ngx_conf_file_t      *conf_file;
     ngx_log_t            *log;
 
-    void                 *ctx;
+    void                 *ctx;  //每个conf的私有成员
     ngx_uint_t            module_type;
     ngx_uint_t            cmd_type;
 

@@ -1,0 +1,7 @@
+{
+  "files.associations": {
+    "*.json": "cpp",
+    "compare": "c",
+    "ngx_config.h": "c"
+  }
+}

@@ -16,7 +16,7 @@ static ngx_int_t ngx_event_connect_set_transparent(ngx_peer_connection_t *pc,
     ngx_socket_t s);
 #endif
 
-
+//nginx对等连接的建立流程
 ngx_int_t
 ngx_event_connect_peer(ngx_peer_connection_t *pc)
 {
@@ -30,12 +30,13 @@ ngx_event_connect_peer(ngx_peer_connection_t *pc)
     ngx_socket_t       s;
     ngx_event_t       *rev, *wev;
     ngx_connection_t  *c;
-
+    
+    //调用获取回调获取socket地址等信息
     rc = pc->get(pc, pc->data);
     if (rc != NGX_OK) {
         return rc;
     }
-
+    //创建socket并设置相关参数如非阻塞等
     type = (pc->type ? pc->type : SOCK_STREAM);
 
     s = ngx_socket(pc->sockaddr->sa_family, type, 0);
@@ -156,7 +157,8 @@ ngx_event_connect_peer(ngx_peer_connection_t *pc)
             goto failed;
         }
     }
-
+    
+    //设置收发回调
     if (type == SOCK_STREAM) {
         c->recv = ngx_recv;
         c->send = ngx_send;
@@ -192,7 +194,7 @@ ngx_event_connect_peer(ngx_peer_connection_t *pc)
     wev->log = pc->log;
 
     pc->connection = c;
-
+    
     c->number = ngx_atomic_fetch_add(ngx_connection_counter, 1);
 
     c->start_time = ngx_current_msec;
@@ -205,7 +207,8 @@ ngx_event_connect_peer(ngx_peer_connection_t *pc)
 
     ngx_log_debug3(NGX_LOG_DEBUG_EVENT, pc->log, 0,
                    "connect to %V, fd:%d #%uA", pc->name, s, c->number);
-
+    
+    //发起连接
     rc = connect(s, pc->sockaddr, pc->socklen);
 
     if (rc == -1) {
@@ -300,7 +303,8 @@ ngx_event_connect_peer(ngx_peer_connection_t *pc)
 
         event = NGX_LEVEL_EVENT;
     }
-
+    
+    //注册连接就绪事件
     if (ngx_add_event(rev, NGX_READ_EVENT, event) != NGX_OK) {
         goto failed;
     }

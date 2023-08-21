@@ -23,6 +23,19 @@ typedef ssize_t (*ngx_send_pt)(ngx_connection_t *c, u_char *buf, size_t size);
 typedef ngx_chain_t *(*ngx_send_chain_pt)(ngx_connection_t *c, ngx_chain_t *in,
     off_t limit);
 
+/*
+它定义了nginx所有IO操作的回调函数接口:
+
+recv: 普通套接字接收数据回调
+recv_chain: 分散接收数据回调
+udp_recv: UDP套接字接收数据回调
+send: 普通套接字发送数据回调
+udp_send: UDP套接字单包发送回调
+udp_send_chain: UDP套接字分散发送数据回调
+send_chain: 分散发送数据回调
+flags: 标志位
+
+*/
 typedef struct {
     ngx_recv_pt        recv;
     ngx_recv_chain_pt  recv_chain;

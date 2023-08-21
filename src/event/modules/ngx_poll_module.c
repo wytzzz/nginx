@@ -258,9 +258,9 @@ ngx_poll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
 #endif
 
     ngx_log_debug1(NGX_LOG_DEBUG_EVENT, cycle->log, 0, "poll timer: %M", timer);
-
+    // 使用 poll 函数等待事件的发生
     ready = poll(event_list, (u_int) nevents, (int) timer);
-
+    // 获取 poll 函数的返回值和错误码
     err = (ready == -1) ? ngx_errno : 0;
 
     if (flags & NGX_UPDATE_TIME || ngx_event_timer_alarm) {
@@ -287,7 +287,7 @@ ngx_poll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
         ngx_log_error(level, cycle->log, err, "poll() failed");
         return NGX_ERROR;
     }
-
+     // 处理 poll 函数返回的无事件情况
     if (ready == 0) {
         if (timer != NGX_TIMER_INFINITE) {
             return NGX_OK;
@@ -297,9 +297,9 @@ ngx_poll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
                       "poll() returned no events without timeout");
         return NGX_ERROR;
     }
-
+    // 遍历事件列表，处理就绪的事件
     for (i = 0; i < nevents && ready; i++) {
-
+        //获取事件的就绪状态（revents = event_list[i].revents）
         revents = event_list[i].revents;
 
 #if 1
@@ -333,7 +333,7 @@ ngx_poll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
              */
             continue;
         }
-
+        //获取事件关联的连接对象（c = ngx_cycle->files[event_list[i].fd]
         c = ngx_cycle->files[event_list[i].fd];
 
         if (c->fd == -1) {
@@ -352,7 +352,9 @@ ngx_poll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
 
             continue;
         }
-
+        
+        //如果事件的就绪状态包含POLLERR、POLLHUP或POLLNVAL标志，
+        //将POLLIN和POLLOUT标志添加到就绪状态中，以确保至少有一个活动处理程序能够处理这些错误事件。
         if (revents & (POLLERR|POLLHUP|POLLNVAL)) {
 
             /*
@@ -364,7 +366,8 @@ ngx_poll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
         }
 
         found = 0;
-
+        //检查就绪状态是否包含POLLIN标志，并且读事件处于活动状态。
+        //如果满足条件，将读事件设置为就绪状态，并将事件添加到相应的事件队列（ngx_posted_accept_events或ngx_posted_events）中
         if ((revents & POLLIN) && c->read->active) {
             found = 1;
 
@@ -377,7 +380,8 @@ ngx_poll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
 
             ngx_post_event(ev, queue);
         }
-
+        //检查就绪状态是否包含POLLOUT标志，并且写事件处于活动状态。
+        //如果满足条件，将写事件设置为就绪状态，并将事件添加到ngx_posted_events队列中。
         if ((revents & POLLOUT) && c->write->active) {
             found = 1;
 

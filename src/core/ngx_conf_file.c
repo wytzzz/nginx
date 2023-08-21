@@ -153,7 +153,9 @@ ngx_conf_add_dump(ngx_conf_t *cf, ngx_str_t *filename)
     return NGX_OK;
 }
 
-
+/*
+这段代码是Nginx配置文件解析的核心函数ngx_conf_parse。它根据给定的配置文件名解析配置文件，并调用相应的处理函数进行处理。
+*/
 char *
 ngx_conf_parse(ngx_conf_t *cf, ngx_str_t *filename)
 {
@@ -172,7 +174,7 @@ ngx_conf_parse(ngx_conf_t *cf, ngx_str_t *filename)
     fd = NGX_INVALID_FILE;
     prev = NULL;
 #endif
-
+    //如果提供了配置文件名（filename不为NULL），则打开配置文件，并初始化一些相关的数据结构。
     if (filename) {
 
         /* open configuration file */
@@ -229,16 +231,18 @@ ngx_conf_parse(ngx_conf_t *cf, ngx_str_t *filename)
         } else {
             cf->conf_file->dump = NULL;
         }
+    
 
     } else if (cf->conf_file->file.fd != NGX_INVALID_FILE) {
 
         type = parse_block;
-
+    
+    //如果既没有提供配置文件名，也没有有效的配置文件描述符，则解析的类型为parse_param。
     } else {
         type = parse_param;
     }
 
-
+    //开始解析配置文件的内容，通过调用ngx_conf_read_token(cf)读取配置文件中的一个令牌。
     for ( ;; ) {
         rc = ngx_conf_read_token(cf);
 
@@ -288,7 +292,7 @@ ngx_conf_parse(ngx_conf_t *cf, ngx_str_t *filename)
         }
 
         /* rc == NGX_OK || rc == NGX_CONF_BLOCK_START */
-
+        //如果存在自定义的处理函数（cf->handler不为NULL），则调用该处理函数进行处理。
         if (cf->handler) {
 
             /*
@@ -315,7 +319,7 @@ ngx_conf_parse(ngx_conf_t *cf, ngx_str_t *filename)
             goto failed;
         }
 
-
+        //调用ngx_conf_handler处理当前令牌
         rc = ngx_conf_handler(cf, rc);
 
         if (rc == NGX_ERROR) {
@@ -360,11 +364,12 @@ ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
     ngx_uint_t      i, found;
     ngx_str_t      *name;
     ngx_command_t  *cmd;
-
+    
+    //获取当前解析到的配置指令的名称（name变量
     name = cf->args->elts;
 
     found = 0;
-
+    //遍历Nginx的模块列表，查找匹配当前指令名称的指令
     for (i = 0; cf->cycle->modules[i]; i++) {
 
         cmd = cf->cycle->modules[i]->commands;
@@ -383,7 +388,6 @@ ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
             }
 
             found = 1;
-
             if (cf->cycle->modules[i]->type != NGX_CONF_MODULE
                 && cf->cycle->modules[i]->type != cf->module_type)
             {
@@ -459,7 +463,7 @@ ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
                     conf = confp[cf->cycle->modules[i]->ctx_index];
                 }
             }
-
+            //调用指令的处理函数（cmd->set）进行指令的具体处理
             rv = cmd->set(cf, cmd, conf);
 
             if (rv == NGX_CONF_OK) {
@@ -476,7 +480,7 @@ ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
             return NGX_ERROR;
         }
     }
-
+    
     if (found) {
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                            "\"%s\" directive is not allowed here", name->data);
@@ -756,7 +760,7 @@ ngx_conf_read_token(ngx_conf_t *cf)
                 last_space = 1;
                 found = 1;
             }
-
+            //加入args
             if (found) {
                 word = ngx_array_push(cf->args);
                 if (word == NULL) {
@@ -1021,10 +1025,11 @@ ngx_conf_log_error(ngx_uint_t level, ngx_conf_t *cf, ngx_err_t err,
                   cf->conf_file->file.name.data, cf->conf_file->line);
 }
 
-
+/*函数ngx_conf_set_flag_slot的作用是解析配置文件中的布尔类型配置项，并将解析结果存储到相应的配置结构中。*/
 char *
 ngx_conf_set_flag_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
+    //函数接受三个参数：cf表示配置上下文，cmd表示当前解析的指令，conf表示配置结构体的指针。
     char  *p = conf;
 
     ngx_str_t        *value;
@@ -1052,7 +1057,7 @@ ngx_conf_set_flag_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
                      value[1].data, cmd->name.data);
         return NGX_CONF_ERROR;
     }
-
+    //如果指令结构体中定义了post回调函数，执行该回调函数，并将解析结果fp作为参数传递给回调函数进行后续处理。
     if (cmd->post) {
         post = cmd->post;
         return post->post_handler(cf, post, fp);

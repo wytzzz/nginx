@@ -27,6 +27,20 @@ typedef struct {
 #endif
 
 
+/*
+这是nginx中事件结构体ngx_event_s的定义:
+
+data: 扩展数据指针
+各种标志位表示事件的状态,如就绪、启用等
+available: 可读写字节数或需要接受连接数
+handler: 事件处理回调
+index: 事件索引
+log: 日志
+timer: 时间轮树节点,用于时间事件
+queue: 缓存队列节点
+nginx将所有的IO操作,超时处理等封装为事件对象。
+根据事件就绪状态调用对应的处理回调实现非阻塞并发服务器模型。
+*/
 struct ngx_event_s {
     void            *data;
 
@@ -162,7 +176,24 @@ struct ngx_event_aio_s {
 
 #endif
 
+/*
+add/del方法添加/删除事件对象
+enable/disable方法启用/禁用事件
+add_conn方法添加网络连接对象
+del_conn方法删除网络连接对象
+notify方法通知事件处理回调
+process_events方法处理事件对象就绪情况
+init方法模块初始化
+done方法模块卸载
 
+nginx通过这套标准接口管理不同事件实现模块:
+
+如epoll, kqueue,事件方法由具体模块实现
+nginx核心只与这套接口进行交互,不关心底层实现
+提供事件添加、删除、通知等统一接口
+模块开发也只需实现这套接口即可
+
+*/
 typedef struct {
     ngx_int_t  (*add)(ngx_event_t *ev, ngx_int_t event, ngx_uint_t flags);
     ngx_int_t  (*del)(ngx_event_t *ev, ngx_int_t event, ngx_uint_t flags);
@@ -426,6 +457,14 @@ extern ngx_os_io_t  ngx_io;
 #define NGX_EVENT_CONF        0x02000000
 
 
+/*
+connections：表示服务器支持的并发连接数。
+use：表示所使用的事件模块的索引值。
+multi_accept：表示是否开启多连接接受请求的模式。
+accept_mutex：表示是否开启接受锁，用于控制连接的竞争访问。
+accept_mutex_delay：表示接受锁延迟的时间。
+name：表示事件模块的名称。
+*/
 typedef struct {
     ngx_uint_t    connections;
     ngx_uint_t    use;
@@ -442,7 +481,13 @@ typedef struct {
 #endif
 } ngx_event_conf_t;
 
-
+/*
+ngx_event_module_t定义了nginx事件模块的基本信息和钩子函数:
+nginx在启动时会遍历所有链接的事件模块,通过这些钩子进行模块的加载和初始化:
+create_conf: 分配和创建模块专用配置
+init_conf: 加载并解析模块配置
+actions: 注册标准事件处理接口函数
+*/
 typedef struct {
     ngx_str_t              *name;
 

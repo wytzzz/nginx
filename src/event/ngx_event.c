@@ -20,21 +20,45 @@ extern ngx_module_t ngx_epoll_module;
 extern ngx_module_t ngx_select_module;
 
 
+//这个函数负责初始化 ngx_event 模块的配置
 static char *ngx_event_init_conf(ngx_cycle_t *cycle, void *conf);
+//这个函数是 ngx_event 模块的初始化函数
 static ngx_int_t ngx_event_module_init(ngx_cycle_t *cycle);
+//这个函数在每个工作进程初始化时被调用
 static ngx_int_t ngx_event_process_init(ngx_cycle_t *cycle);
+//这个函数处理 events 指令块的配置。
 static char *ngx_events_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
-
+//这个函数处理 events 块中 connections 指令的配置
 static char *ngx_event_connections(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
+    //这个函数处理 events 块中 use 指令的配置。
 static char *ngx_event_use(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
+//这个函数处理 events 块中 debug_connection 指令的配置
 static char *ngx_event_debug_connection(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
-
+//这个函数负责创建 ngx_event_core_module 的主配置结构体
 static void *ngx_event_core_create_conf(ngx_cycle_t *cycle);
+//这个函数负责初始化 ngx_event_core_module 的主配置结构体。
 static char *ngx_event_core_init_conf(ngx_cycle_t *cycle, void *conf);
 
 
+//这些变量是与事件处理和定时器相关的全局变量，用于配置和控制Nginx的事件驱动机制。
+/*
+ngx_timer_resolution：定时器分辨率，用于设置定时器的超时时间。较小的值可以提高定时器的精度，但也会增加CPU负载。默认值为0，表示使用系统的默认定时器分辨率。
+ngx_event_timer_alarm：用于触发定时器的闹钟信号标志位。
+ngx_event_max_module：事件模块的最大数量。
+ngx_event_flags：事件标志位，用于控制事件处理的行为。
+ngx_event_actions：事件模块的操作函数集合。
+ngx_connection_counter：连接计数器，用于生成唯一的连接ID。
+ngx_accept_mutex_ptr：接受锁的指针，用于控制并发连接的接受。
+ngx_accept_mutex：接受锁，用于控制并发连接的接受。
+ngx_use_accept_mutex：是否启用接受锁的标志位。
+ngx_accept_events：每次获取接受锁时处理的事件数量。
+ngx_accept_mutex_held：接受锁是否被当前进程持有的标志位。
+ngx_accept_mutex_delay：获取接受锁时的延迟时间。
+ngx_accept_disabled：达到最大并发连接数时，拒绝接受新的连接的标志位。
+ngx_use_exclusive_accept：是否使用独占模式接受新连接的标志位。
+*/
 static ngx_uint_t     ngx_timer_resolution;
 sig_atomic_t          ngx_event_timer_alarm;
 
@@ -98,7 +122,9 @@ static ngx_core_module_t  ngx_events_module_ctx = {
     ngx_event_init_conf
 };
 
-
+//ngx_event 模块是 NGINX 核心模块之一，它负责处理事件驱动的网络框架。
+//它包含了事件循环、连接管理、事件处理等核心功能。
+//ngx_event 模块提供了一组基本的事件处理函数和数据结构，以及与事件驱动相关的配置指令，如 events、worker_connections 等。
 ngx_module_t  ngx_events_module = {
     NGX_MODULE_V1,
     &ngx_events_module_ctx,                /* module context */
@@ -117,7 +143,16 @@ ngx_module_t  ngx_events_module = {
 
 static ngx_str_t  event_core_name = ngx_string("event_core");
 
+/*
 
+worker_connections：配置每个工作进程可以同时处理的连接数。指令类型为NGX_EVENT_CONF|NGX_CONF_TAKE1，表示事件模块的配置指令，需要一个参数。处理函数为ngx_event_connections。
+use：指定使用的事件模型或驱动程序。指令类型为NGX_EVENT_CONF|NGX_CONF_TAKE1，表示事件模块的配置指令，需要一个参数。处理函数为ngx_event_use。
+multi_accept：配置是否开启多连接接受。指令类型为NGX_EVENT_CONF|NGX_CONF_FLAG，表示事件模块的配置指令，无需参数。处理函数为ngx_conf_set_flag_slot。
+accept_mutex：配置是否开启连接接受互斥锁。指令类型为NGX_EVENT_CONF|NGX_CONF_FLAG，表示事件模块的配置指令，无需参数。处理函数为ngx_conf_set_flag_slot。
+accept_mutex_delay：配置连接接受互斥锁的延迟时间。指令类型为NGX_EVENT_CONF|NGX_CONF_TAKE1，表示事件模块的配置指令，需要一个参数。处理函数为ngx_conf_set_msec_slot。
+debug_connection：配置是否开启调试连接。指令类型为NGX_EVENT_CONF|NGX_CONF_TAKE1，表示事件模块的配置指令，需要一个参数。处理函数为ngx_event_debug_connection。
+ngx_null_command：空指令，用于标记指令数组的结束。
+*/
 static ngx_command_t  ngx_event_core_commands[] = {
 
     { ngx_string("worker_connections"),
@@ -166,6 +201,8 @@ static ngx_command_t  ngx_event_core_commands[] = {
 };
 
 
+
+//ngx_event_core_module_ctx 结构体中包含了一组函数指针，用于注册 ngx_event_core_module 的处理函数
 static ngx_event_module_t  ngx_event_core_module_ctx = {
     &event_core_name,
     ngx_event_core_create_conf,            /* create configuration */
@@ -174,7 +211,8 @@ static ngx_event_module_t  ngx_event_core_module_ctx = {
     { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL }
 };
 
-
+//ngx_event_core_module 则是 ngx_event 模块的一个子模块，它是 ngx_event 模块的核心配置模块。
+//ngx_event_core_module 提供了更具体的事件处理配置和功能，用于配置和控制事件循环、连接池、超时管理、事件模型等。
 ngx_module_t  ngx_event_core_module = {
     NGX_MODULE_V1,
     &ngx_event_core_module_ctx,            /* module context */
@@ -191,12 +229,16 @@ ngx_module_t  ngx_event_core_module = {
 };
 
 
+//nginx事件和定时器的处理:
 void
 ngx_process_events_and_timers(ngx_cycle_t *cycle)
 {
     ngx_uint_t  flags;
     ngx_msec_t  timer, delta;
-
+    
+    //根据全局变量ngx_timer_resolution的值，设置定时器的超时时间timer和标志位flags。
+    //如果ngx_timer_resolution为真，则定时器超时时间为无限大，标志位为0；
+    //否则，调用ngx_event_find_timer函数获取定时器的超时时间，并将标志位设置为NGX_UPDATE_TIME
     if (ngx_timer_resolution) {
         timer = NGX_TIMER_INFINITE;
         flags = 0;
@@ -215,7 +257,8 @@ ngx_process_events_and_timers(ngx_cycle_t *cycle)
 
 #endif
     }
-
+    
+    //加锁处理等待连接请求
     if (ngx_use_accept_mutex) {
         if (ngx_accept_disabled > 0) {
             ngx_accept_disabled--;
@@ -237,29 +280,40 @@ ngx_process_events_and_timers(ngx_cycle_t *cycle)
             }
         }
     }
-
+    
+    //如果存在已推送的下一事件队列ngx_posted_next_events，
+    //则调用ngx_event_move_posted_next函数将其移动到当前事件队列中，
+    //并将定时器超时时间设置为0，表示立即处理这些事件
     if (!ngx_queue_empty(&ngx_posted_next_events)) {
         ngx_event_move_posted_next(cycle);
         timer = 0;
     }
-
+    
+    //记录当前时间delta
     delta = ngx_current_msec;
-
+    
+    //调用ngx_process_events函数处理就绪的事件。
+    //该函数会根据定时器超时时间和标志位处理事件，包括等待事件、接收网络数据、处理已就绪事件等。
     (void) ngx_process_events(cycle, timer, flags);
-
+    
+    //计算事件处理的时间差delta。
     delta = ngx_current_msec - delta;
 
     ngx_log_debug1(NGX_LOG_DEBUG_EVENT, cycle->log, 0,
                    "timer delta: %M", delta);
-
+        
+    //调用ngx_event_process_posted函数处理已推送的接受事件
     ngx_event_process_posted(cycle, &ngx_posted_accept_events);
-
+    
+    //如果之前成功获取到接受锁，则释放接受锁。
     if (ngx_accept_mutex_held) {
         ngx_shmtx_unlock(&ngx_accept_mutex);
     }
-
+    
+    //调用ngx_event_expire_timers函数处理过期的定时器
     ngx_event_expire_timers();
-
+    
+    //最后调用ngx_event_process_posted函数处理其余推送事件
     ngx_event_process_posted(cycle, &ngx_posted_events);
 }
 
@@ -498,15 +552,17 @@ ngx_event_module_init(ngx_cycle_t *cycle)
     ngx_time_t          *tp;
     ngx_core_conf_t     *ccf;
     ngx_event_conf_t    *ecf;
-
+    
+    //j获取ngx_events_module 模块的配置结构体指针。
     cf = ngx_get_conf(cycle->conf_ctx, ngx_events_module);
+    //获取 ngx_event_core_module 模块的配置结构体指针 ecf
     ecf = (*cf)[ngx_event_core_module.ctx_index];
 
     if (!ngx_test_config && ngx_process <= NGX_PROCESS_MASTER) {
         ngx_log_error(NGX_LOG_NOTICE, cycle->log, 0,
                       "using the \"%s\" event method", ecf->name);
     }
-
+    //获取 ngx_core_module 模块的配置结构体指针 ccf。
     ccf = (ngx_core_conf_t *) ngx_get_conf(cycle->conf_ctx, ngx_core_module);
 
     ngx_timer_resolution = ccf->timer_resolution;
@@ -570,7 +626,7 @@ ngx_event_module_init(ngx_cycle_t *cycle)
     shm.size = size;
     ngx_str_set(&shm.name, "nginx_shared_zone");
     shm.log = cycle->log;
-
+    //创建一个共享内存区域，大小为上述计算的大小
     if (ngx_shm_alloc(&shm) != NGX_OK) {
         return NGX_ERROR;
     }
@@ -579,7 +635,7 @@ ngx_event_module_init(ngx_cycle_t *cycle)
 
     ngx_accept_mutex_ptr = (ngx_atomic_t *) shared;
     ngx_accept_mutex.spin = (ngx_uint_t) -1;
-
+    //调用 ngx_shmtx_create() 函数创建共享内存互斥锁
     if (ngx_shmtx_create(&ngx_accept_mutex, (ngx_shmtx_sh_t *) shared,
                          cycle->lock_file.data)
         != NGX_OK)
@@ -642,10 +698,12 @@ ngx_event_process_init(ngx_cycle_t *cycle)
     ngx_core_conf_t     *ccf;
     ngx_event_conf_t    *ecf;
     ngx_event_module_t  *module;
-
+    
+    //获取核心配置结构体ngx_core_conf_t和事件配置结构体ngx_event_conf_t。
     ccf = (ngx_core_conf_t *) ngx_get_conf(cycle->conf_ctx, ngx_core_module);
     ecf = ngx_event_get_conf(cycle->conf_ctx, ngx_event_core_module);
-
+    
+    //根据配置判断是否开启接受锁，并设置相应的全局变量
     if (ccf->master && ccf->worker_processes > 1 && ecf->accept_mutex) {
         ngx_use_accept_mutex = 1;
         ngx_accept_mutex_held = 0;
@@ -667,7 +725,8 @@ ngx_event_process_init(ngx_cycle_t *cycle)
 #endif
 
     ngx_use_exclusive_accept = 0;
-
+    
+    //初始化一些队列和计时器，包括ngx_posted_accept_events、ngx_posted_next_events、ngx_posted_events等
     ngx_queue_init(&ngx_posted_accept_events);
     ngx_queue_init(&ngx_posted_next_events);
     ngx_queue_init(&ngx_posted_events);
@@ -675,7 +734,8 @@ ngx_event_process_init(ngx_cycle_t *cycle)
     if (ngx_event_timer_init(cycle->log) == NGX_ERROR) {
         return NGX_ERROR;
     }
-
+    
+    //遍历cycle->modules数组，找到指定的事件模块，并调用其init函数进行事件模块的初始化操作。
     for (m = 0; cycle->modules[m]; m++) {
         if (cycle->modules[m]->type != NGX_EVENT_MODULE) {
             continue;
@@ -686,7 +746,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
         }
 
         module = cycle->modules[m]->ctx;
-
+        //调用actions.init
         if (module->actions.init(cycle, ngx_timer_resolution) != NGX_OK) {
             /* fatal */
             exit(2);
@@ -696,7 +756,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
     }
 
 #if !(NGX_WIN32)
-
+    //如果开启了定时器分辨率，并且不是使用定时器事件，设置定时器信号处理函数，以及定时器的间隔。
     if (ngx_timer_resolution && !(ngx_event_flags & NGX_USE_TIMER_EVENT)) {
         struct sigaction  sa;
         struct itimerval  itv;
@@ -721,7 +781,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
                           "setitimer() failed");
         }
     }
-
+    //如果是使用文件描述符事件，获取系统的文件描述符限制，并为cycle->files分配内存。
     if (ngx_event_flags & NGX_USE_FD_EVENT) {
         struct rlimit  rlmt;
 
@@ -750,7 +810,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
     }
 
 #endif
-
+    //分配内存并初始化连接数组cycle->connections、读事件数组cycle->read_events、写事件数组cycle->write_events，并设置相应的标志。
     cycle->connections =
         ngx_alloc(sizeof(ngx_connection_t) * cycle->connection_n, cycle->log);
     if (cycle->connections == NULL) {
@@ -784,7 +844,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
 
     i = cycle->connection_n;
     next = NULL;
-
+    //通过一个 do-while 循环，从 cycle->connection_n - 1 开始递减 i 的值
     do {
         i--;
 
@@ -800,7 +860,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
     cycle->free_connection_n = cycle->connection_n;
 
     /* for each listening socket */
-
+    //首先，通过循环遍历每个监听套接字(cycle->listening.elts)，进行以下操作：
     ls = cycle->listening.elts;
     for (i = 0; i < cycle->listening.nelts; i++) {
 
@@ -809,28 +869,28 @@ ngx_event_process_init(ngx_cycle_t *cycle)
             continue;
         }
 #endif
-
+        //这个函数从连接池中获取一个连接，并将它与当前监听套接字关联。
         c = ngx_get_connection(ls[i].fd, cycle->log);
 
         if (c == NULL) {
             return NGX_ERROR;
         }
-
+        //将连接的类型和日志设置为监听套接字的类型和日志。
         c->type = ls[i].type;
         c->log = &ls[i].log;
 
         c->listening = &ls[i];
         ls[i].connection = c;
-
+        //获取连接的读事件，并标记它为一个接受事件。
         rev = c->read;
 
         rev->log = c->log;
         rev->accept = 1;
-
+//检查是否支持TCP_DEFER_ACCEPT选项，这个选项可以让服务器延迟接受连接，直到有数据可读。
 #if (NGX_HAVE_DEFERRED_ACCEPT)
         rev->deferred_accept = ls[i].deferred_accept;
 #endif
-
+        
         if (!(ngx_event_flags & NGX_USE_IOCP_EVENT)
             && cycle->old_cycle)
         {
@@ -890,7 +950,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
         }
 
 #else
-
+        //检查连接的类型，如果是流式套接字（TCP），则设置读事件的处理函数为ngx_event_accept。
         if (c->type == SOCK_STREAM) {
             rev->handler = ngx_event_accept;
 
@@ -898,6 +958,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
         } else if (ls[i].quic) {
             rev->handler = ngx_quic_recvmsg;
 #endif
+        //如果为udp，则使用udp的读事件处理。
         } else {
             rev->handler = ngx_event_recvmsg;
         }
@@ -913,7 +974,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
         }
 
 #endif
-
+        //如果启用了接受互斥锁，那么只有获得锁的worker进程才会添加事件。
         if (ngx_use_accept_mutex) {
             continue;
         }
@@ -935,7 +996,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
         }
 
 #endif
-
+        //向事件模块添加读事件，如果失败则返回错误。
         if (ngx_add_event(rev, NGX_READ_EVENT, 0) == NGX_ERROR) {
             return NGX_ERROR;
         }
@@ -1254,6 +1315,7 @@ ngx_event_debug_connection(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 }
 
 
+//创建NGINX事件核心模块的配置结构体。
 static void *
 ngx_event_core_create_conf(ngx_cycle_t *cycle)
 {
@@ -1263,7 +1325,8 @@ ngx_event_core_create_conf(ngx_cycle_t *cycle)
     if (ecf == NULL) {
         return NULL;
     }
-
+    
+    //初始化配置结构体中的一些字段，将其设置为未设置的默认值
     ecf->connections = NGX_CONF_UNSET_UINT;
     ecf->use = NGX_CONF_UNSET_UINT;
     ecf->multi_accept = NGX_CONF_UNSET;
@@ -1288,6 +1351,7 @@ ngx_event_core_create_conf(ngx_cycle_t *cycle)
 static char *
 ngx_event_core_init_conf(ngx_cycle_t *cycle, void *conf)
 {
+    //将传入的配置结构体指针conf转换为ngx_event_conf_t类型的指针ecf
     ngx_event_conf_t  *ecf = conf;
 
 #if (NGX_HAVE_EPOLL) && !(NGX_TEST_BUILD_EPOLL)
@@ -1299,6 +1363,8 @@ ngx_event_core_init_conf(ngx_cycle_t *cycle, void *conf)
 
     module = NULL;
 
+//根据编译时的配置和支持的事件模块，
+//选择默认的事件模块并存储在变量module中。优先选择epoll、devpoll、kqueue、select等事件模块
 #if (NGX_HAVE_EPOLL) && !(NGX_TEST_BUILD_EPOLL)
 
     fd = epoll_create(100);
@@ -1332,8 +1398,10 @@ ngx_event_core_init_conf(ngx_cycle_t *cycle, void *conf)
     }
 
 #endif
-
+    
+    //如果没有选择到默认的事件模块，遍历cycle->modules数组，找到第一个类型为NGX_EVENT_MODULE的模块，并将其作为事件模块。
     if (module == NULL) {
+        //遍历所有modules
         for (i = 0; cycle->modules[i]; i++) {
 
             if (cycle->modules[i]->type != NGX_EVENT_MODULE) {
@@ -1351,12 +1419,12 @@ ngx_event_core_init_conf(ngx_cycle_t *cycle, void *conf)
             break;
         }
     }
-
+    
     if (module == NULL) {
         ngx_log_error(NGX_LOG_EMERG, cycle->log, 0, "no events module found");
         return NGX_CONF_ERROR;
     }
-
+    //初始化配置结构体中的各个字段
     ngx_conf_init_uint_value(ecf->connections, DEFAULT_CONNECTIONS);
     cycle->connection_n = ecf->connections;
 

@@ -9,7 +9,7 @@
 #include <ngx_core.h>
 #include <ngx_event.h>
 
-
+//全局变量
 ngx_rbtree_t              ngx_event_timer_rbtree;
 static ngx_rbtree_node_t  ngx_event_timer_sentinel;
 
@@ -50,12 +50,14 @@ ngx_event_find_timer(void)
 }
 
 
+//这段代码实现了nginx事件定时器过期的处理
 void
 ngx_event_expire_timers(void)
 {
     ngx_event_t        *ev;
     ngx_rbtree_node_t  *node, *root, *sentinel;
-
+    
+    //从定时器红黑树中找出最近到期的定时器事件
     sentinel = ngx_event_timer_rbtree.sentinel;
 
     for ( ;; ) {
@@ -68,7 +70,8 @@ ngx_event_expire_timers(void)
         node = ngx_rbtree_min(root, sentinel);
 
         /* node->key > ngx_current_msec */
-
+        
+        //判断时间是否到期,未到期直接返回
         if ((ngx_msec_int_t) (node->key - ngx_current_msec) > 0) {
             return;
         }

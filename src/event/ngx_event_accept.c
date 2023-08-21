@@ -16,7 +16,7 @@ static void ngx_reorder_accept_events(ngx_listening_t *ls);
 #endif
 static void ngx_close_accepted_connection(ngx_connection_t *c);
 
-
+//负责在监听套接字上接受新的传入连接。
 void
 ngx_event_accept(ngx_event_t *ev)
 {
@@ -33,7 +33,7 @@ ngx_event_accept(ngx_event_t *ev)
 #if (NGX_HAVE_ACCEPT4)
     static ngx_uint_t  use_accept4 = 1;
 #endif
-
+    //函数首先检查与函数调用关联的事件是否超时。如果超时，它会启用接受事件并清除超时标志
     if (ev->timedout) {
         if (ngx_enable_accept_events((ngx_cycle_t *) ngx_cycle) != NGX_OK) {
             return;
@@ -41,7 +41,7 @@ ngx_event_accept(ngx_event_t *ev)
 
         ev->timedout = 0;
     }
-
+    //它获取事件核心模块的事件配置。
     ecf = ngx_event_get_conf(ngx_cycle->conf_ctx, ngx_event_core_module);
 
     if (!(ngx_event_flags & NGX_USE_KQUEUE_EVENT)) {

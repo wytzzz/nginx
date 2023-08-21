@@ -32,7 +32,27 @@ typedef ngx_int_t (*ngx_event_set_peer_session_pt)(ngx_peer_connection_t *pc,
 typedef void (*ngx_event_save_peer_session_pt)(ngx_peer_connection_t *pc,
     void *data);
 
+//ngx_peer_connection_s是Nginx中的对等连接数据结构。它用于记录和管理对等服务器连接的相关信息:
+/*
+connection: 对等连接
+sockaddr: IP地址信息
+name: 对等名称
+tries: 连接尝试次数
+start_time: 连接开始时间
+get/free/notify: 事件回调函数
+data: 附加数据指针
+local: 本地地址信息
+type: 类型
+rcvbuf: 接收缓冲区大小
+log: 日志对象
+各种标志位表示连接状态
 
+它让Nginx可以对对等连接进行集中管理,比如:
+连接池化
+负载均衡
+SSL会话缓存
+错误和状态检查
+*/
 struct ngx_peer_connection_s {
     ngx_connection_t                *connection;
 

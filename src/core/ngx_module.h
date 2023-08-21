@@ -218,7 +218,25 @@
 
 #define NGX_MODULE_V1_PADDING  0, 0, 0, 0, 0, 0, 0, 0
 
-
+/*
+ctx_index：模块在模块上下文数组中的索引。
+index：模块在模块数组中的索引。
+name：模块的名称。
+spare0和spare1：备用字段，未使用。
+version：模块的版本号。
+signature：模块的签名信息。
+ctx：模块的上下文。
+commands：模块的配置指令数组。
+type：模块的类型。
+init_master：主进程初始化时调用的回调函数。
+init_module：模块初始化时调用的回调函数。
+init_process：工作进程初始化时调用的回调函数。
+init_thread：线程初始化时调用的回调函数。
+exit_thread：线程退出时调用的回调函数。
+exit_process：工作进程退出时调用的回调函数。
+exit_master：主进程退出时调用的回调函数。
+spare_hook0到spare_hook7：备用的钩子函数字段，未使用
+*/
 struct ngx_module_s {
     ngx_uint_t            ctx_index;
     ngx_uint_t            index;
@@ -231,7 +249,7 @@ struct ngx_module_s {
     ngx_uint_t            version;
     const char           *signature;
 
-    void                 *ctx;
+    void                 *ctx;  //每个module得私有成员。  
     ngx_command_t        *commands;
     ngx_uint_t            type;
 
@@ -256,7 +274,8 @@ struct ngx_module_s {
     uintptr_t             spare_hook7;
 };
 
-
+//提供了核心功能和基本配置指令，如http、events、http_core等模块。
+//ngx_core_module_t结构体定义了核心模块的基本信息，包括模块名称、创建配置结构体的函数、初始化配置结构体的函数等。
 typedef struct {
     ngx_str_t             name;
     void               *(*create_conf)(ngx_cycle_t *cycle);

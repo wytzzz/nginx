@@ -22,16 +22,21 @@ ngx_uint_t         ngx_max_module;
 static ngx_uint_t  ngx_modules_n;
 
 
+/*
+该函数的主要目的是为每个模块设置索引和名称。
+它遍历ngx_modules数组，为每个模块设置索引和名称，并更新相应的全局变量。这些索引和名称在后续的模块初始化过程中会被使用。*/
 ngx_int_t
 ngx_preinit_modules(void)
 {
     ngx_uint_t  i;
-
+    
+    //进入循环，遍历ngx_modules数组，直到遇到空指针为止
     for (i = 0; ngx_modules[i]; i++) {
         ngx_modules[i]->index = i;
         ngx_modules[i]->name = ngx_module_names[i];
     }
-
+    
+    //将i的值赋给全局变量ngx_modules_n，表示模块的数量
     ngx_modules_n = i;
     ngx_max_module = ngx_modules_n + NGX_MAX_DYNAMIC_MODULES;
 

@@ -9,7 +9,7 @@
 #include <ngx_core.h>
 #include <ngx_channel.h>
 
-
+//函数的作用是将通道信息通过套接字发送给对端。它使用sendmsg函数将消息数据和控制消息一起发送给套接字。
 ngx_int_t
 ngx_write_channel(ngx_socket_t s, ngx_channel_t *ch, size_t size,
     ngx_log_t *log)
@@ -60,22 +60,24 @@ ngx_write_channel(ngx_socket_t s, ngx_channel_t *ch, size_t size,
     if (ch->fd == -1) {
         msg.msg_accrights = NULL;
         msg.msg_accrightslen = 0;
-
     } else {
         msg.msg_accrights = (caddr_t) &ch->fd;
         msg.msg_accrightslen = sizeof(int);
     }
 
 #endif
-
+    
+    //设置iov的第一个元素为ch，设置长度为size。
     iov[0].iov_base = (char *) ch;
     iov[0].iov_len = size;
-
+    
+    //设置msg的其他字段，如msg_name、msg_iov等。
     msg.msg_name = NULL;
     msg.msg_namelen = 0;
     msg.msg_iov = iov;
     msg.msg_iovlen = 1;
-
+    
+    //调用sendmsg函数向套接字发送消息。
     n = sendmsg(s, &msg, 0);
 
     if (n == -1) {

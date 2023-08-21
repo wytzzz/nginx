@@ -52,7 +52,8 @@ ngx_event_add_timer(ngx_event_t *ev, ngx_msec_t timer)
 {
     ngx_msec_t      key;
     ngx_msec_int_t  diff;
-
+    
+    //计算下次定时器触发事件的时间key
     key = ngx_current_msec + timer;
 
     if (ev->timer_set) {
@@ -64,7 +65,8 @@ ngx_event_add_timer(ngx_event_t *ev, ngx_msec_t timer)
          */
 
         diff = (ngx_msec_int_t) (key - ev->timer.key);
-
+        
+        //判断与先前定时器key相差是否小于延迟阈值
         if (ngx_abs(diff) < NGX_TIMER_LAZY_DELAY) {
             ngx_log_debug3(NGX_LOG_DEBUG_EVENT, ev->log, 0,
                            "event timer: %d, old: %M, new: %M",
@@ -80,9 +82,9 @@ ngx_event_add_timer(ngx_event_t *ev, ngx_msec_t timer)
     ngx_log_debug3(NGX_LOG_DEBUG_EVENT, ev->log, 0,
                    "event timer add: %d: %M:%M",
                     ngx_event_ident(ev->data), timer, ev->timer.key);
-
+    //调用rbtree插入实现定时器管理
     ngx_rbtree_insert(&ngx_event_timer_rbtree, &ev->timer);
-
+    
     ev->timer_set = 1;
 }
 

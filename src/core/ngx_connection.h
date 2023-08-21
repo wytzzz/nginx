@@ -119,7 +119,28 @@ typedef enum {
 #define NGX_SSL_BUFFERED       0x01
 #define NGX_HTTP_V2_BUFFERED   0x02
 
-
+/*
+data: 保留数据指针
+read/write: IO读写事件
+fd: 套接字文件描述符
+recv/send: 数据收发回调
+recv_chain/send_chain: 分散收发数据回调
+listening: 监听 sockets
+sent: 已发送字节数
+log: 日志
+pool: 内存池
+type: TCP/UDP等
+sockaddr: IP地址信息
+proxy_protocol: PROXY协议解析
+ssl: SSL连接
+udp: UDP连接
+buffer: 数据缓冲
+queue: 队列连接
+number: 连接号
+start_time: 起始时间
+requests: 请求数
+log_error: 日志错误级别
+各种标记,比如已经关闭、重用等*/
 struct ngx_connection_s {
     void               *data;
     ngx_event_t        *read;
