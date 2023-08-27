@@ -239,7 +239,7 @@ spare_hook0到spare_hook7：备用的钩子函数字段，未使用
 */
 struct ngx_module_s {
     ngx_uint_t            ctx_index;
-    ngx_uint_t            index;
+    ngx_uint_t            index; 
 
     char                 *name;
 

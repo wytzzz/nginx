@@ -43,21 +43,22 @@ ngx_event_accept(ngx_event_t *ev)
     }
     //它获取事件核心模块的事件配置。
     ecf = ngx_event_get_conf(ngx_cycle->conf_ctx, ngx_event_core_module);
-
+    
+    //如果没有使用Kqueue事件模型，设置ev->available为ecf->multi_accept，表示可以一次性接受多个连接。
     if (!(ngx_event_flags & NGX_USE_KQUEUE_EVENT)) {
         ev->available = ecf->multi_accept;
     }
-
+    
     lc = ev->data;
     ls = lc->listening;
     ev->ready = 0;
 
     ngx_log_debug2(NGX_LOG_DEBUG_EVENT, ev->log, 0,
                    "accept on %V, ready: %d", &ls->addr_text, ev->available);
-
+    //进入一个循环，用于接受连接。循环中的操作包括
     do {
         socklen = sizeof(ngx_sockaddr_t);
-
+    //调用accept函数接受新的连接
 #if (NGX_HAVE_ACCEPT4)
         if (use_accept4) {
             s = accept4(lc->fd, &sa.sockaddr, &socklen, SOCK_NONBLOCK);
@@ -67,7 +68,8 @@ ngx_event_accept(ngx_event_t *ev)
 #else
         s = accept(lc->fd, &sa.sockaddr, &socklen);
 #endif
-
+        
+        //如果accept函数返回失败，根据错误码进行处理，如EAGAIN表示暂时没有新连接可接受，需要返回。
         if (s == (ngx_socket_t) -1) {
             err = ngx_socket_errno;
 
@@ -135,10 +137,11 @@ ngx_event_accept(ngx_event_t *ev)
 #if (NGX_STAT_STUB)
         (void) ngx_atomic_fetch_add(ngx_stat_accepted, 1);
 #endif
-
+        //计算当前work进程是否超负荷
         ngx_accept_disabled = ngx_cycle->connection_n / 8
                               - ngx_cycle->free_connection_n;
-
+        
+        //将socket和connection关联
         c = ngx_get_connection(s, ev->log);
 
         if (c == NULL) {
@@ -149,7 +152,7 @@ ngx_event_accept(ngx_event_t *ev)
 
             return;
         }
-
+        //设置连接的类型为SOCK_STREAM，创建连接的内存池，分配存储sockaddr的内存，复制地址信息等
         c->type = SOCK_STREAM;
 
 #if (NGX_STAT_STUB)
@@ -204,7 +207,7 @@ ngx_event_accept(ngx_event_t *ev)
         }
 
         *log = ls->log;
-
+        //设置连接的读写事件对象rev和wev的一些属性，如log、ready等。
         c->recv = ngx_recv;
         c->send = ngx_send;
         c->recv_chain = ngx_recv_chain;
@@ -228,7 +231,7 @@ ngx_event_accept(ngx_event_t *ev)
 #endif
         }
 #endif
-
+    
         rev = c->read;
         wev = c->write;
 
@@ -309,13 +312,13 @@ ngx_event_accept(ngx_event_t *ev)
 
         log->data = NULL;
         log->handler = NULL;
-
+        //调用监听对象ls的处理函数来处理新的连接
         ls->handler(c);
 
         if (ngx_event_flags & NGX_USE_KQUEUE_EVENT) {
             ev->available--;
         }
-
+    
     } while (ev->available);
 
 #if (NGX_HAVE_EPOLLEXCLUSIVE)
